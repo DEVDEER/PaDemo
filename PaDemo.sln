@@ -7,9 +7,25 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Infrastructure", "Infrastru
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Ui", "Ui", "{4CA25003-5007-41AD-AE35-31E757E5229F}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Infrastructure.Azure", "Infrastructure.Azure", "{7C129E0B-34DE-4A47-9C4D-D3C04FC5CA19}"
+	ProjectSection(SolutionItems) = preProject
+		Infrastructure\Infrastructure.Azure\azuredeploy.json = Infrastructure\Infrastructure.Azure\azuredeploy.json
+		Infrastructure\Infrastructure.Azure\azuredeploy.parameters.test.json = Infrastructure\Infrastructure.Azure\azuredeploy.parameters.test.json
+		Infrastructure\Infrastructure.Azure\deploy.ps1 = Infrastructure\Infrastructure.Azure\deploy.ps1
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{9898B0F8-39E6-4A18-AEFA-3DF0F44EDB4F}"
+	ProjectSection(SolutionItems) = preProject
+		.gitignore = .gitignore
+		README.md = README.md
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{7C129E0B-34DE-4A47-9C4D-D3C04FC5CA19} = {C9750E87-D7FE-4C7D-89E3-3E3B7B130EDC}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {91B625D0-6186-4BD2-A2F1-762788FCDB51}
