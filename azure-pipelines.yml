@@ -1,0 +1,49 @@
+# Basic build pipeline to restore, build and publish a solution of ASP.Net Core projects
+pool:
+  vmImage: 'ubuntu-latest'
+
+trigger:
+  none
+
+variables:
+  - name: 'solution'
+    value: '**/PaDemo.sln'
+  - name: 'BuildConfiguration'
+    value: 'Release'
+
+steps:
+- task: UseDotNet@2
+  displayName: Use .Net Core SDK 3.1.x
+  inputs:
+    version: 3.1.x
+    packageType: sdk
+    installationPath: $(Agent.ToolsDirectory)/dotnet
+
+- task: DotNetCoreCLI@2
+  displayName: Restore
+  inputs:
+    command: restore
+    projects: $(solution)
+
+- task: DotNetCoreCLI@2
+  displayName: Build
+  inputs:
+    command: build
+    projects: $(solution)
+    arguments: '--no-restore --configuration $(BuildConfiguration)'
+
+- task: DotNetCoreCLI@2
+  displayName: Publish
+  inputs:
+    command: publish
+    publishWebProjects: false
+    projects: |
+      Ui/Ui.Frontend/Ui.Frontend.csproj      
+    arguments: '--no-build --configuration $(BuildConfiguration) --output $(Build.ArtifactStagingDirectory)'
+    zipAfterPublish: True
+
+- task: PublishBuildArtifacts@1
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+    ArtifactName: 'drop'
+    publishLocation: 'Container'
