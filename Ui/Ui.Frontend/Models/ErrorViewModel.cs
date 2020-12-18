@@ -1,11 +1,16 @@
-using System;
-
 namespace Ui.Frontend.Models
 {
-    public class ErrorViewModel
-    {
-        public string RequestId { get; set; }
+	using System;
+	using System.Linq;
 
-        public bool ShowRequestId => !string.IsNullOrEmpty(RequestId);
-    }
+	public class ErrorViewModel
+	{
+		#region properties
+
+		public string RequestId { get; set; }
+
+		public bool ShowRequestId => !string.IsNullOrEmpty(RequestId);
+
+		#endregion
+	}
 }

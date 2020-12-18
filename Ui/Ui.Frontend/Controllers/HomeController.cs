@@ -1,37 +1,49 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Threading.Tasks;
-using Ui.Frontend.Models;
-
-namespace Ui.Frontend.Controllers
+﻿namespace Ui.Frontend.Controllers
 {
-    public class HomeController : Controller
-    {
-        private readonly ILogger<HomeController> _logger;
+	using System;
+	using System.Diagnostics;
+	using System.Linq;
 
-        public HomeController(ILogger<HomeController> logger)
-        {
-            _logger = logger;
-        }
+	using Microsoft.AspNetCore.Mvc;
+	using Microsoft.Extensions.Logging;
 
-        public IActionResult Index()
-        {
-            return View();
-        }
+	using Models;
 
-        public IActionResult Privacy()
-        {
-            return View();
-        }
+	public class HomeController : Controller
+	{
+		#region member vars
 
-        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-        public IActionResult Error()
-        {
-            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
-        }
-    }
+		private readonly ILogger<HomeController> _logger;
+
+		#endregion
+
+		#region constructors and destructors
+
+		public HomeController(ILogger<HomeController> logger)
+		{
+			_logger = logger;
+		}
+
+		#endregion
+
+		#region methods
+
+		[ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
+		public IActionResult Error()
+		{
+			return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+		}
+
+		public IActionResult Index()
+		{
+			return View();
+		}
+
+		public IActionResult Privacy()
+		{
+			return View();
+		}
+
+		#endregion
+	}
 }
