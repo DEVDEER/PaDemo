@@ -1,0 +1,314 @@
+{
+  "$schema":
+    "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "resource-location": {
+      "type": "String",
+      "defaultValue": "[resourceGroup().location]",
+      "metadata": {
+        "description": "The Azure region where the ressources should live on."
+      }
+    },
+    "company-key": {
+      "type": "String",
+      "metadata": {
+        "description": "The shortened unique key for the running company."
+      }
+    },
+    "app-stage-name": {
+      "type": "string",
+      "metadata": {
+        "description": "The name of the stage with the first letter in upper-case (e.g. 'Test' or 'Production')."
+      }
+    },
+    "aspnetcore-environment": {
+      "type": "string",
+      "metadata": {
+        "description": "The name of the asp net core environment with the first letter in upper-case (e.g. 'Test' or 'Production')."
+      }
+    },
+    "project-name": {
+      "type": "string",
+      "metadata": {
+        "description": "The lower case name of the project as it appears in Azure DevOps."
+      }
+    }
+  },
+  "variables": {
+    "ai-action-group-smart-detect": "Smart Detection",
+    "ai-alert-rule-failure-anomalies-name": "[concat('Failure Anomalies - ai-', parameters('project-name'), '-', toLower(parameters('app-stage-name')))]",
+    "app-name": "[concat('web-', parameters('company-key'), '-', parameters('project-name'), '-', toLower(parameters('app-stage-name')))]",
+    "service-plan-name": "[concat('asp-', parameters('project-name'), '-', toLower(parameters('app-stage-name')))]",
+    "asp-cpu-alert-name": "[concat('alert-asp-', parameters('project-name'), '-', toLower(parameters('app-stage-name')), '-cpu')]",
+    "asp-memory-alert-name": "[concat('alert-asp-', parameters('project-name'), '-', toLower(parameters('app-stage-name')), '-memory')]",
+    "application-insights-name": "[concat('ai-', parameters('project-name'), '-', toLower(parameters('app-stage-name')))]"
+  },
+  "resources": [
+    {
+      "type": "microsoft.insights/actionGroups",
+      "apiVersion": "2019-03-01",
+      "name": "[variables('ai-action-group-smart-detect')]",
+      "location": "Global",
+      "properties": {
+        "groupShortName": "SmartDetect",
+        "enabled": true,
+        "emailReceivers": [],
+        "smsReceivers": [],
+        "webhookReceivers": [],
+        "itsmReceivers": [],
+        "azureAppPushReceivers": [],
+        "automationRunbookReceivers": [],
+        "voiceReceivers": [],
+        "logicAppReceivers": [],
+        "azureFunctionReceivers": []
+      }
+    },
+    {
+      "type": "microsoft.insights/components",
+      "apiVersion": "2015-05-01",
+      "name": "[variables('application-insights-name')]",
+      "location": "[parameters('resource-location')]",
+      "kind": "web",
+      "properties": {
+        "Application_Type": "web",
+        "Request_Source": "rest"
+      }
+    },
+    {
+      "type": "Microsoft.Web/serverfarms",
+      "apiVersion": "2018-02-01",
+      "name": "[variables('service-plan-name')]",
+      "location": "[parameters('resource-location')]",
+      "sku": {
+        "name": "B1",
+        "tier": "Basic",
+        "size": "B1",
+        "family": "B",
+        "capacity": 1
+      },
+      "kind": "linux",
+      "properties": {
+        "perSiteScaling": false,
+        "maximumElasticWorkerCount": 1,
+        "isSpot": false,
+        "reserved": false,
+        "isXenon": false,
+        "hyperV": false,
+        "targetWorkerCount": 0,
+        "targetWorkerSizeId": 0
+      }
+    },
+    {
+      "type": "Microsoft.Web/sites",
+      "apiVersion": "2018-11-01",
+      "name": "[variables('app-name')]",
+      "location": "[parameters('resource-location')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/serverfarms', variables('service-plan-name'))]",
+        "[resourceId('microsoft.insights/components', variables('application-insights-name'))]"
+      ],
+      "kind": "app",
+      "properties": {
+        "siteConfig": {
+          "numberOfWorkers": 1,
+          "defaultDocuments": [
+            "index.html",
+            "hostingstart.html"
+          ],
+          "requestTracingEnabled": false,
+          "remoteDebuggingEnabled": false,
+          "remoteDebuggingVersion": "VS2019",
+          "httpLoggingEnabled": false,
+          "logsDirectorySizeLimit": 35,
+          "detailedErrorLoggingEnabled": false,
+          "publishingUsername": "[concat('$publish-', parameters('project-name'), '-', toLower(parameters('app-stage-name')))]",
+          "use32BitWorkerProcess": true,
+          "webSocketsEnabled": false,
+          "alwaysOn": false,
+          "managedPipelineMode": "Integrated",
+          "http20Enabled": true,
+          "minTlsVersion": "1.2",
+          "ftpsState": "Disabled",
+          "reservedInstanceCount": 0,
+          "appSettings": [
+            {
+              "name": "ASPNETCORE_ENVIRONMENT",
+              "value": "[parameters('aspnetcore-environment')]"
+            },
+            {
+                "name": "APPINSIGHTS_INSTRUMENTATIONKEY",
+                "value": "[reference(resourceId('microsoft.insights/components', variables('application-insights-name')), '2014-04-01').InstrumentationKey]"
+            }
+          ],
+          "metadata": [
+            {
+              "name": "CURRENT_STACK",
+              "value": "dotnetcore"
+            }
+          ]
+        },
+        "enabled": true,
+        "hostNameSslStates": [
+          {
+            "name": "[concat(variables('app-name'), '.azurewebsites.net')]",
+            "sslState": "Disabled",
+            "hostType": "Standard"
+          },
+          {
+            "name": "[concat(variables('app-name'), '.scm.azurewebsites.net')]",
+            "sslState": "Disabled",
+            "hostType": "Repository"
+          }
+        ],
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('service-plan-name'))]",
+        "reserved": false,
+        "isXenon": false,
+        "hyperV": false,
+        "scmSiteAlsoStopped": false,
+        "clientAffinityEnabled": true,
+        "clientCertEnabled": false,
+        "hostNamesDisabled": false,
+        "containerSize": 0,
+        "dailyMemoryTimeQuota": 0,
+        "httpsOnly": true,
+        "redundancyMode": "None"
+      }
+    },
+    {
+      "type": "Microsoft.Web/sites/hostNameBindings",
+      "apiVersion": "2018-11-01",
+      "name":
+        "[concat(variables('app-name'), '/', variables('app-name'), '.azurewebsites.net')]",
+      "location": "[parameters('resource-location')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/sites', variables('app-name'))]"
+      ],
+      "properties": {
+        "siteName": "variables('app-name')",
+        "hostNameType": "Verified"
+      }
+    },
+    {
+      "type": "microsoft.alertsmanagement/smartdetectoralertrules",
+      "apiVersion": "2019-06-01",
+      "name": "[variables('ai-alert-rule-failure-anomalies-name')]",
+      "location": "global",
+      "dependsOn": [
+        "[resourceId('microsoft.insights/components', variables('application-insights-name'))]",
+        "[resourceId('microsoft.insights/actionGroups', variables('ai-action-group-smart-detect'))]"
+      ],
+      "properties": {
+        "description":
+          "Failure Anomalies notifies you of an unusual rise in the rate of failed HTTP requests or dependency calls.",
+        "state": "Enabled",
+        "severity": "Sev3",
+        "frequency": "PT1M",
+        "detector": {
+          "id": "FailureAnomaliesDetector",
+          "name": "Failure Anomalies",
+          "description":
+            "Detects if your application experiences an abnormal rise in the rate of HTTP requests or dependency calls that are reported as failed. The anomaly detection uses machine learning algorithms and occurs in near real time, therefore there's no need to define a frequency for this signal.<br/></br/>To help you triage and diagnose the problem, an analysis of the characteristics of the failures and related telemetry is provided with the detection. This feature works for any app, hosted in the cloud or on your own servers, that generates request or dependency telemetry - for example, if you have a worker role that calls <a class=\"ext-smartDetecor-link\" href=\\\"https://docs.microsoft.com/azure/application-insights/app-insights-api-custom-events-metrics#trackrequest\\\" target=\\\"_blank\\\">TrackRequest()</a> or <a class=\"ext-smartDetecor-link\" href=\\\"https://docs.microsoft.com/azure/application-insights/app-insights-api-custom-events-metrics#trackdependency\\\" target=\\\"_blank\\\">TrackDependency()</a>.<br/><br/><a class=\"ext-smartDetecor-link\" href=\\\"https://docs.microsoft.com/azure/azure-monitor/app/proactive-failure-diagnostics\\\" target=\\\"_blank\\\">Learn more about Failure Anomalies</a>",
+          "supportedResourceTypes": [
+            "ApplicationInsights"
+          ]
+        },
+        "scope": [
+          "[resourceId('microsoft.insights/components', variables('application-insights-name'))]"
+        ],
+        "actionGroups": {
+          "groupIds": [
+            "[resourceId('microsoft.insights/actionGroups', variables('ai-action-group-smart-detect'))]"
+          ]
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Insights/metricAlerts",
+      "apiVersion": "2018-03-01",
+      "name": "[variables('asp-cpu-alert-name')]",
+      "location": "global",
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/serverfarms', variables('service-plan-name'))]",
+        "[resourceId('microsoft.insights/actionGroups', variables('ai-action-group-smart-detect'))]"
+      ],
+      "tags": {},
+      "properties": {
+        "description":
+          "Dynamically detects and alerts unusually high CPU usage based on the history of previous usage.",
+        "severity": 2,
+        "enabled": true,
+        "scopes": [
+          "[resourceId('Microsoft.Web/serverfarms', variables('service-plan-name'))]"
+        ],
+        "evaluationFrequency":"PT5M",
+        "windowSize": "PT5M",
+        "criteria": {
+            "odata.type": "Microsoft.Azure.Monitor.MultipleResourceMultipleMetricCriteria",
+            "allOf": [
+              {
+                "alertSensitivity": "Medium",
+                "failingPeriods": {
+                  "numberOfEvaluationPeriods": 4,
+                  "minFailingPeriodsToAlert": 4
+                },
+                "name": "DynamicCpuPercentage",
+                "metricNamespace": "microsoft.web/serverfarms",
+                "metricName": "CpuPercentage",
+                "dimensions": [],
+                "operator": "GreaterThan",
+                "timeAggregation": "Average",
+                "criterionType": "DynamicThresholdCriterion"
+              }
+            ]
+        },
+        "actions": [
+          {
+            "actionGroupId": "[resourceId('microsoft.insights/actionGroups', variables('ai-action-group-smart-detect'))]"
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Insights/metricAlerts",
+      "apiVersion": "2018-03-01",
+      "name": "[variables('asp-memory-alert-name')]",
+      "location": "global",
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/serverfarms', variables('service-plan-name'))]",
+        "[resourceId('microsoft.insights/actionGroups', variables('ai-action-group-smart-detect'))]"
+      ],
+      "tags": {},
+      "properties": {
+        "description":
+          "Alert for high memory usage. Upscaling might be neccessary.",
+        "severity": 2,
+        "enabled": true,
+        "scopes": [
+          "[resourceId('Microsoft.Web/serverfarms', variables('service-plan-name'))]"
+        ],
+        "evaluationFrequency":"PT5M",
+        "windowSize": "PT5M",
+        "criteria": {
+          "odata.type": "Microsoft.Azure.Monitor.SingleResourceMultipleMetricCriteria",
+          "allOf": [
+            {
+              "name" : "MemoryPercentage",
+              "metricName": "MemoryPercentage",
+              "dimensions":[],
+              "operator": "GreaterThanOrEqual",
+              "threshold" : 80,
+              "timeAggregation": "Maximum",
+              "criterionType": "StaticThresholdCriterion"
+            }
+          ]
+        },
+        "actions": [
+          {
+            "actionGroupId": "[resourceId('microsoft.insights/actionGroups', variables('ai-action-group-smart-detect'))]"
+          }
+        ]
+      }
+    }
+  ]
+}
